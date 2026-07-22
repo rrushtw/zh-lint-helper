@@ -30,10 +30,11 @@
   "patterns": [
     {"name": "math-symbol", "re": "[∪∩⊆]", "good": "改白話:聯集 / 交集 / 子集", "class": "A"},
     {"name": "emoji-shortcode", "re": ":[a-z][a-z0-9_]{2,}:", "good": "用真 unicode emoji,不用 shortcode", "class": "A"},
-    {"name": "latin-abbrev", "re": "\\b(per|via|vs|i\\.e\\.|e\\.g\\.)\\b", "good": "換中文連接詞:依 / 透過 / 相對於 / 即 / 例如", "class": "A", "ignorecase": true},
+    {"name": "latin-abbrev", "re": "\\b(via|i\\.e\\.|e\\.g\\.)\\b", "good": "換中文連接詞:透過 / 即 / 例如", "class": "A", "ignorecase": true},
+    {"name": "latin-abbrev", "re": "\\b(per|vs)\\b", "good": "換中文連接詞:依 / 相對於(比較表可保留,請確認)", "class": "B", "ignorecase": true},
 
     {"name": "date-slash", "re": "(?<!\\d)\\d{1,2}/\\d{1,2}(?!\\d)", "good": "日期用 dash:MM-DD(斜線可能是分數/比例,請確認)", "class": "B"},
-    {"name": "heading-paren", "re": "^#{1,6}\\s.*[（(]", "good": "標題不加括號補充,改 subtitle(em-dash)或內文(單位/型別/cross-ref 例外)", "class": "B"},
+    {"name": "heading-paren", "re": "^#{1,6}\\s.*[（(][^)）]*[一-鿿]", "good": "標題的中文括號補充改 subtitle(em-dash)或內文;英文 gloss / 單位 / 型別 / cross-ref 不在此限", "class": "B", "note": "只抓括號內含中文的補充,純英文 gloss 跳過"},
     {"name": "translationese", "re": "(進行了|值得注意的是|確保了)", "good": "翻譯腔:直接用動詞 / 刪掉直說 / 「讓…更穩」", "class": "B"}
   ]
 }
