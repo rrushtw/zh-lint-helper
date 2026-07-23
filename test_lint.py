@@ -32,11 +32,13 @@ check("via 是 A", ("latin-abbrev", "via", "A") in hits_cls("透過 API via 中�
 check("per 降 B", ("latin-abbrev", "per", "B") in hits_cls("per 每筆資料"))
 check("vs 降 B", ("latin-abbrev", "vs", "B") in hits_cls("方案甲 vs 方案乙"))
 
-# heading-paren 白名單:含中文補充才報,純英文 gloss 跳過
-check("heading 中文補充 → 報", ("heading-paren", "## 狀態機（附帶說明歷程") in
-      {(n, m) for n, m in hits("## 狀態機（附帶說明歷程）")})
-check("heading 英文 gloss → 不報", not any(n == "heading-paren" for n, _ in hits("## 通訊互動模式 (Interaction Patterns)")))
-check("heading 縮寫 → 不報", not any(n == "heading-paren" for n, _ in hits("## 系統狀態機 (FSM)")))
+# paren-supplement:全形（含中文補充才報;純英文 gloss / 半形(連結網址)跳過
+check("標題中文補充 → 報", ("paren-supplement", "（附帶說明歷程") in hits("## 狀態機（附帶說明歷程）"))
+check("內文中文補充 → 報", ("paren-supplement", "（這是內文") in hits("一般內文的括號補充（這是內文）"))
+check("Mermaid 標題中文補充 → 報", ("paren-supplement", "（含旗標") in hits("title 車輛狀態（含旗標）"))
+check("英文 gloss → 不報", not any(n == "paren-supplement" for n, _ in hits("## 通訊互動模式（Interaction Patterns）")))
+check("半形英文縮寫 → 不報", not any(n == "paren-supplement" for n, _ in hits("## 系統狀態機 (FSM)")))
+check("markdown 連結中文網址 → 不報", not any(n == "paren-supplement" for n, _ in hits("見 [格式定義](/T3/vehicle-supervision-system/MQTT格式定義)")))
 
 # run-on-list:並列子句擠一句該報,短名詞列舉 / 已是 bullet 放過
 check("run-on 並列子句 → 報", any(n == "run-on-list" for n, _ in
