@@ -34,8 +34,8 @@
     {"name": "latin-abbrev", "re": "\\b(per|vs)\\b", "good": "換中文連接詞:依 / 相對於(比較表可保留,請確認)", "class": "B", "ignorecase": true},
 
     {"name": "date-slash", "re": "(?<!\\d)\\d{1,2}/\\d{1,2}(?!\\d)", "good": "日期用 dash:MM-DD(斜線可能是分數/比例,請確認)", "class": "B"},
-    {"name": "heading-paren", "re": "^#{1,6}\\s.*[（(][^)）]*[一-鿿]", "good": "標題的中文括號補充改 subtitle(em-dash)或內文;英文 gloss / 單位 / 型別 / cross-ref 不在此限", "class": "B", "note": "只抓括號內含中文的補充,純英文 gloss 跳過"},
+    {"name": "paren-supplement", "re": "（[^）]*[一-鿿]", "good": "中文括號補充:標題 / Mermaid / PlantUML 標題 / swagger summary 一律移到 subtitle(em-dash)或內文;內文的合法 gloss / 單位 / 型別 / cross-ref(如「見 X」)可保留,請逐筆判", "class": "B", "note": "只抓全形（含中文的補充;半形(不抓(避免誤打 markdown 連結網址),純英文 gloss(（PowerState）)因括號內無中文自動跳過"},
     {"name": "translationese", "re": "(進行了|值得注意的是|確保了)", "good": "翻譯腔:直接用動詞 / 刪掉直說 / 「讓…更穩」", "class": "B"},
-    {"name": "run-on-list", "re": "^(?!\\s*(?:[-*+]|\\d+[.)]|>|#)).*?(?:[^、\\n]{5,}、){3,}", "good": "並列子句擠一句 → 一律拆 bullet(§0 LIST;純短名詞列舉可 inline，請確認)", "class": "B", "note": "非 list 行含 3+ 個各≥5 字的、並列段;短名詞列舉(段<5字)放過。偵測是啟發式故列 B,但寫作規則是一律拆"}
+    {"name": "run-on-list", "re": "^(?!\\s*(?:[-*+]|\\d+[.)]|>|#|\\|)).*?(?:[^、\\n]{5,}、){3,}", "good": "並列子句擠一句 → 一律拆 bullet(§0 LIST;純短名詞列舉可 inline，請確認)", "class": "B", "note": "非 list 行含 3+ 個各≥5 字的、並列段;短名詞列舉(段<5字)放過。表格列(|開頭)排除。偵測是啟發式故列 B,但寫作規則是一律拆"}
   ]
 }
