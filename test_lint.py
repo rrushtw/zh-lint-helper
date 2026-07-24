@@ -47,6 +47,30 @@ check("短名詞列舉 → 不報", not any(n == "run-on-list" for n, _ in hits(
 check("已是 bullet → 不報", not any(n == "run-on-list" for n, _ in hits("- 消掉相依、空值防呆送出、走 fallback、拆 Map")))
 check("兩個子句 → 不報（未達 3 段）", not any(n == "run-on-list" for n, _ in hits("這段消掉了相依、也做了空值防呆。")))
 
+# halfwidth-comma:緊貼 CJK 的半形逗號該報,英數之間放行
+check("中文後半形逗號 → 報", ("halfwidth-comma", ",", "A") in hits_cls("這幾個判斷都對,方向抓得很好"))
+check("半形逗號後接中文 → 報", ("halfwidth-comma", ",", "A") in hits_cls("Howie,超速這兩張 MR"))
+check("英文之間半形逗號 → 不報", not any(n == "halfwidth-comma" for n, _ in hits("支援 MINOR, MAJOR, CRITICAL 三級")))
+check("數字之間半形逗號 → 不報", not any(n == "halfwidth-comma" for n, _ in hits("總共 1,000 筆資料")))
+check("inline code 內逗號 → 不報", not any(n == "halfwidth-comma" for n, _ in hits("看 `a,b` 這段跟後面的中文")))
+
+# halfwidth-colon:緊貼 CJK 的半形冒號該報;全形 / 半形後加空格 / 數字兩側放行
+check("中文後緊貼半形冒號 → 報", ("halfwidth-colon", ":", "A") in hits_cls("先說結論:車端分級"))
+check("半形冒號後接中文 → 報", ("halfwidth-colon", ":", "A") in hits_cls("MR:超速這兩張"))
+check("半形冒號後有空格 → 不報", not any(n == "halfwidth-colon" for n, _ in hits("先說結論: 車端分級")))
+check("全形冒號 → 不報", not any(n == "halfwidth-colon" for n, _ in hits("先說結論：車端分級")))
+check("時間 10:30 → 不報", not any(n == "halfwidth-colon" for n, _ in hits("預計 10:30 出發")))
+check("行號 a.js:129 → 不報", not any(n == "halfwidth-colon" for n, _ in hits("看 a.js:129 這行")))
+check("比例 2:1 → 不報", not any(n == "halfwidth-colon" for n, _ in hits("男女比例 2:1 偏高")))
+
+# halfwidth-semicolon:緊貼 CJK 的半形分號該報,英數之間放行
+check("中文後半形分號 → 報", ("halfwidth-semicolon", ";", "A") in hits_cls("已確認;方向抓得很好"))
+check("半形分號後接中文 → 報", ("halfwidth-semicolon", ";", "A") in hits_cls("方案甲;方案乙"))
+check("中文分號即使後接空格 → 報", ("halfwidth-semicolon", ";", "A") in hits_cls("這是中文; 後面還有"))
+check("英文分號後接空格 → 不報", not any(n == "halfwidth-semicolon" for n, _ in hits("這段 a; b 是程式碼")))
+check("英文分號無空格 → 報", ("halfwidth-semicolon", ";", "A") in hits_cls("這段 a;b 是程式碼"))
+check("數字之間半形分號 → 報", ("halfwidth-semicolon", ";", "A") in hits_cls("總共 1;2 兩筆"))
+
 # 不該誤判的
 check("純英文行不查 per", ("latin-abbrev", "per") not in hits("results are shown per file"))
 check("fenced code 不查", hits("```\n這段代碼\n```") == set())
