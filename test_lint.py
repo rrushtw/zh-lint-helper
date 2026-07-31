@@ -47,6 +47,27 @@ check("短名詞列舉 → 不報", not any(n == "run-on-list" for n, _ in hits(
 check("已是 bullet → 不報", not any(n == "run-on-list" for n, _ in hits("- 消掉相依、空值防呆送出、走 fallback、拆 Map")))
 check("兩個子句 → 不報（未達 3 段）", not any(n == "run-on-list" for n, _ in hits("這段消掉了相依、也做了空值防呆。")))
 
+# run-on-sentence:一句 3+ 個實質子句(，／；分隔)該報,短子句 / 引言句 / bullet 放過
+check("三子句擠一句 → 報", any(n == "run-on-sentence" for n, _ in
+      hits("先確認欄位型別對不對再說，接著看邊界條件有沒有處理好，最後跑一次整合測試確認。")))
+check("兩子句 → 不報", not any(n == "run-on-sentence" for n, _ in
+      hits("先確認欄位型別對不對再說，接著看邊界條件有沒有處理好。")))
+check("短子句 → 不報", not any(n == "run-on-sentence" for n, _ in hits("這樣改，那樣改，都可以。")))
+check("行尾冒號的引言句 → 不報", not any(n == "run-on-sentence" for n, _ in
+      hits("類別內部的成員應嚴格按照以下順序排列，並建議使用註解標題區隔，以利閱讀：")))
+check("run-on-sentence 已是 bullet → 不報", not any(n == "run-on-sentence" for n, _ in
+      hits("- 先確認欄位型別對不對再說，接著看邊界條件有沒有處理好，最後跑一次整合測試確認。")))
+
+# long-sentence:單句 30+ 中文字該報,英文 / 網址不計字
+check("單句超長 → 報", any(n == "long-sentence" for n, _ in
+      hits("這個規則之所以要放進工具裡是因為每次靠注意力手動掃都會漏掉幾條而且漏的還都是同一類。")))
+check("兩短句 → 不報", not any(n == "long-sentence" for n, _ in
+      hits("這段改得不錯。邊界條件也都有處理到。")))
+check("長網址不計字 → 不報", not any(n == "long-sentence" for n, _ in
+      hits("詳見 https://gitlab.itriadv.co/u2/t3/host/-/merge_requests/62#note_9525 這條留言。")))
+check("long-sentence 已是 bullet → 不報", not any(n == "long-sentence" for n, _ in
+      hits("- 這個規則之所以要放進工具裡是因為每次靠注意力手動掃都會漏掉幾條而且漏的還都是同一類。")))
+
 # halfwidth-comma:緊貼 CJK 的半形逗號該報,英數之間放行
 check("中文後半形逗號 → 報", ("halfwidth-comma", ",", "A") in hits_cls("這幾個判斷都對,方向抓得很好"))
 check("半形逗號後接中文 → 報", ("halfwidth-comma", ",", "A") in hits_cls("Howie,超速這兩張 MR"))
@@ -70,6 +91,11 @@ check("中文分號即使後接空格 → 報", ("halfwidth-semicolon", ";", "A"
 check("英文分號後接空格 → 不報", not any(n == "halfwidth-semicolon" for n, _ in hits("這段 a; b 是程式碼")))
 check("英文分號無空格 → 報", ("halfwidth-semicolon", ";", "A") in hits_cls("這段 a;b 是程式碼"))
 check("數字之間半形分號 → 報", ("halfwidth-semicolon", ";", "A") in hits_cls("總共 1;2 兩筆"))
+
+# 落地：工程直譯動詞該抓(B)，正常詞放過
+check("落地 動詞 → 報 B", ("自創縮語", "落地", "B") in hits_cls("導航參數一路落地到資料庫"))
+check("首版落地 → 報 B", ("自創縮語", "落地", "B") in hits_cls("本期先完成首版落地"))
+check("落地窗 → 仍會命中(B 靠人判)", ("自創縮語", "落地", "B") in hits_cls("客廳有一整面落地窗"))
 
 # 不該誤判的
 check("純英文行不查 per", ("latin-abbrev", "per") not in hits("results are shown per file"))
