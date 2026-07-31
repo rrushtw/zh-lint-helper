@@ -72,7 +72,9 @@ def main(argv):
             total += 1
             tag = "error" if cls == "A" else "warn "
             had_error |= cls == "A"
-            print(f"{f}:{lineno}:{col}: [{cls}/{tag}] {name}: 「{matched}」→ {good}")
+            # 整句規則(long-sentence / run-on-sentence)的 matched 是一長段,截短當定位錨
+            shown = matched if len(matched) <= 24 else matched[:24] + "…"
+            print(f"{f}:{lineno}:{col}: [{cls}/{tag}] {name}: 「{shown}」→ {good}")
 
     if total == 0:
         print("✓ 無違規")
