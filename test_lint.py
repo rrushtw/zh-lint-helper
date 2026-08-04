@@ -25,6 +25,12 @@ def check(name, cond):
 check("大陸用語 代碼", ("大陸用語", "代碼") in hits("這段代碼有問題"))
 check("calque 橫切", ("calque", "橫切") in hits("這是橫切旗標"))
 check("math symbol", ("math-symbol", "∪") in hits("取 A ∪ B 的結果"))
+
+# 工地隱喻:動工 / 完工 是 A;動手 / 施工 有本義或正式名稱例外故降 B
+check("工地隱喻 動工 是 A", ("工地隱喻", "動工", "A") in hits_cls("下週開始動工"))
+check("工地隱喻 完工 是 A", ("工地隱喻", "完工", "A") in hits_cls("預計月底完工"))
+check("工地隱喻 動手 降 B", ("工地隱喻", "動手", "B") in hits_cls("## 動手順序"))
+check("工地隱喻 施工 降 B", ("工地隱喻", "施工", "B") in hits_cls("照施工順序做"))
 check("date-slash 警告", ("date-slash", "5/14") in hits("預計 5/14 完成"))
 
 # latin-abbrev 分級:via/i.e./e.g. 是 A,per/vs 降 B
