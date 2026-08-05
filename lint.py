@@ -17,6 +17,14 @@ from pathlib import Path
 CJK = re.compile(r"[一-鿿]")
 FENCE = re.compile(r"^\s*```")
 INLINE_CODE = re.compile(r"`[^`]*`")
+# markdown 連結目標:URL 與 anchor 不是行文,中文 anchor 不該計入句長 / 並列段
+LINK_DEST = re.compile(r"\]\([^)\s]*\)")
+# 行首的 blockquote 與 list 標記。遮成等長空白後 LIST 三規則的行首排除不再命中,
+# bullet 與 callout 內文一樣受 run-on / long-sentence 檢查——§0 要的是「拆 bullet / sub-list」,
+# 長句落在 bullet 或 callout 框裡同樣該拆。heading 與表格列不遮,維持原本不查。
+LEAD_MARKER = re.compile(r"^\s*(?:>\s*)*(?:(?:[-*+]|\d+[.)])\s+)?")
+# checkbox 例外(§0:checkbox 不拆):保留標記讓規則的行首排除繼續生效。
+CHECKBOX = re.compile(r"^\s*(?:>\s*)*(?:[-*+]|\d+[.)])\s+\[[ xX]\]")
 
 
 def load_rules(path):
@@ -41,6 +49,9 @@ def scan_lines(lines, terms, patterns):
             continue
         # 遮掉 inline code,用等長空白保留欄位位置
         line = INLINE_CODE.sub(lambda m: " " * len(m.group()), raw)
+        line = LINK_DEST.sub(lambda m: " " * len(m.group()), line)
+        if not CHECKBOX.match(line):
+            line = LEAD_MARKER.sub(lambda m: " " * len(m.group()), line, count=1)
         for bad, meta in terms:
             idx = line.find(bad)
             if idx >= 0:
@@ -49,8 +60,9 @@ def scan_lines(lines, terms, patterns):
         for rx, meta in patterns:
             m = rx.search(line)
             if m:
+                # 遮罩都用等長空白,故 offset 可直接套回原始行取可讀的定位錨
                 findings.append((lineno, m.start() + 1, meta["class"],
-                                 meta["name"], m.group(), meta["good"]))
+                                 meta["name"], raw[m.start():m.end()], meta["good"]))
     return findings
 
 

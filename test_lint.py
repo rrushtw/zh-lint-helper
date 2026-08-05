@@ -50,8 +50,15 @@ check("markdown 連結中文網址 → 不報", not any(n == "paren-supplement" 
 check("run-on 並列子句 → 報", any(n == "run-on-list" for n, _ in
       hits("RELEASE_BRAKE 重用消掉相依、空值防呆送出不等回應、走 fallback 記 warn、拆三個獨立 Map。")))
 check("短名詞列舉 → 不報", not any(n == "run-on-list" for n, _ in hits("支援 程式碼、資訊、物件、預設 四種")))
-check("已是 bullet → 不報", not any(n == "run-on-list" for n, _ in hits("- 消掉相依、空值防呆送出、走 fallback、拆 Map")))
+check("bullet 內短名詞列舉 → 不報", not any(n == "run-on-list" for n, _ in hits("- 消掉相依、空值防呆送出、走 fallback、拆 Map")))
+check("bullet 內並列子句 → 報", any(n == "run-on-list" for n, _ in
+      hits("- RELEASE_BRAKE 重用消掉相依、空值防呆送出不等回應、走 fallback 記 warn、拆三個獨立 Map。")))
 check("兩個子句 → 不報（未達 3 段）", not any(n == "run-on-list" for n, _ in hits("這段消掉了相依、也做了空值防呆。")))
+
+check("純英文識別字列舉 → 不報", not any(n == "run-on-list" for n, _ in
+      hits("- 本頁的 topic、payload、cadence、retain 旗標與判定門檻由 ICL 先行定義")))
+check("連結 URL 的中文 anchor 不計句長 → 不報", not any(n == "long-sentence" for n, _ in
+      hits("- Agent 展開 task 後透傳至 ADS（[agent-ads-mqtt §2.1](/T3/interfaces/agent-ads-mqtt#h-21-導航任務-navigate)），ADS 依此識別碼自查內建站點資料庫取得精準停靠姿態")))
 
 # run-on-sentence:一句 3+ 個實質子句(，／；分隔)該報,短子句 / 引言句 / bullet 放過
 check("三子句擠一句 → 報", any(n == "run-on-sentence" for n, _ in
@@ -61,8 +68,12 @@ check("兩子句 → 不報", not any(n == "run-on-sentence" for n, _ in
 check("短子句 → 不報", not any(n == "run-on-sentence" for n, _ in hits("這樣改，那樣改，都可以。")))
 check("行尾冒號的引言句 → 不報", not any(n == "run-on-sentence" for n, _ in
       hits("類別內部的成員應嚴格按照以下順序排列，並建議使用註解標題區隔，以利閱讀：")))
-check("run-on-sentence 已是 bullet → 不報", not any(n == "run-on-sentence" for n, _ in
+check("run-on-sentence 在 bullet 內 → 報", any(n == "run-on-sentence" for n, _ in
       hits("- 先確認欄位型別對不對再說，接著看邊界條件有沒有處理好，最後跑一次整合測試確認。")))
+check("run-on-sentence 在 sub-bullet 內 → 報", any(n == "run-on-sentence" for n, _ in
+      hits("    - 先確認欄位型別對不對再說，接著看邊界條件有沒有處理好，最後跑一次整合測試確認。")))
+check("run-on-sentence checkbox → 不報", not any(n == "run-on-sentence" for n, _ in
+      hits("- [ ] 先確認欄位型別對不對再說，接著看邊界條件有沒有處理好，最後跑一次整合測試確認。")))
 
 # long-sentence:單句 30+ 中文字該報,英文 / 網址不計字
 check("單句超長 → 報", any(n == "long-sentence" for n, _ in
@@ -71,8 +82,18 @@ check("兩短句 → 不報", not any(n == "long-sentence" for n, _ in
       hits("這段改得不錯。邊界條件也都有處理到。")))
 check("長網址不計字 → 不報", not any(n == "long-sentence" for n, _ in
       hits("詳見 https://gitlab.itriadv.co/u2/t3/host/-/merge_requests/62#note_9525 這條留言。")))
-check("long-sentence 已是 bullet → 不報", not any(n == "long-sentence" for n, _ in
+check("long-sentence 在 bullet 內 → 報", any(n == "long-sentence" for n, _ in
       hits("- 這個規則之所以要放進工具裡是因為每次靠注意力手動掃都會漏掉幾條而且漏的還都是同一類。")))
+check("long-sentence 在 blockquote 的 bullet 內 → 報", any(n == "long-sentence" for n, _ in
+      hits("> - 這個規則之所以要放進工具裡是因為每次靠注意力手動掃都會漏掉幾條而且漏的還都是同一類。")))
+check("long-sentence 在 blockquote 純內文 → 報", any(n == "long-sentence" for n, _ in
+      hits("> 這個規則之所以要放進工具裡是因為每次靠注意力手動掃都會漏掉幾條而且漏的還都是同一類。")))
+check("long-sentence checkbox → 不報", not any(n == "long-sentence" for n, _ in
+      hits("- [x] 這個規則之所以要放進工具裡是因為每次靠注意力手動掃都會漏掉幾條而且漏的還都是同一類。")))
+check("bullet 短句 → 不報", not any(n == "long-sentence" for n, _ in
+      hits("- 這段改得不錯。邊界條件也都有處理到。")))
+check("表格列長句 → 不報", not any(n == "long-sentence" for n, _ in
+      hits("| 說明 | 這個規則之所以要放進工具裡是因為每次靠注意力手動掃都會漏掉幾條而且漏的還都是同一類 |")))
 
 # halfwidth-comma:緊貼 CJK 的半形逗號該報,英數之間放行
 check("中文後半形逗號 → 報", ("halfwidth-comma", ",", "A") in hits_cls("這幾個判斷都對,方向抓得很好"))
