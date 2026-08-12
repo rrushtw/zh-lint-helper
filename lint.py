@@ -37,6 +37,26 @@ def load_rules(path):
     return terms, patterns
 
 
+def find_outside(line, bad, allow):
+    """第一個不被 allow 詞包住的 bad 位置,沒有則 -1。
+
+    allow 是「這個壞詞合法出現在裡面」的較長詞,例如「施工」的「施工規範」——
+    甲方文件正式名稱，引用時照原名不改。
+    """
+    spans = []
+    for a in allow:
+        start = 0
+        while (i := line.find(a, start)) >= 0:
+            spans.append((i, i + len(a)))
+            start = i + 1
+    start = 0
+    while (i := line.find(bad, start)) >= 0:
+        if not any(s <= i and i + len(bad) <= e for s, e in spans):
+            return i
+        start = i + 1
+    return -1
+
+
 def scan_lines(lines, terms, patterns):
     """回傳 findings:(lineno, col, class, name, matched, suggestion)。lines 為可迭代的原始行。"""
     findings = []
@@ -53,7 +73,7 @@ def scan_lines(lines, terms, patterns):
         if not CHECKBOX.match(line):
             line = LEAD_MARKER.sub(lambda m: " " * len(m.group()), line, count=1)
         for bad, meta in terms:
-            idx = line.find(bad)
+            idx = find_outside(line, bad, meta.get("allow", []))
             if idx >= 0:
                 findings.append((lineno, idx + 1, meta["class"],
                                  meta.get("cat", "term"), bad, meta["good"]))
@@ -76,9 +96,14 @@ def main(argv):
 
     had_error = False
     total = 0
+    missing = [f for f in files if not f.is_file()]
+    if missing:
+        # 靜默跳過會讓打錯路徑的掃描印出「✓ 無違規」——假綠燈比漏抓更糟。
+        for f in missing:
+            print(f"找不到檔案: {f}", file=sys.stderr)
+        return 2
+
     for f in files:
-        if not f.is_file():
-            continue
         lines = f.read_text(encoding="utf-8").splitlines()
         for lineno, col, cls, name, matched, good in scan_lines(lines, terms, patterns):
             total += 1
