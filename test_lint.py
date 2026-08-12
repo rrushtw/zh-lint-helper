@@ -124,6 +124,12 @@ check("落地 動詞 → 報 B", ("自創縮語", "落地", "B") in hits_cls("�
 check("首版落地 → 報 B", ("自創縮語", "落地", "B") in hits_cls("本期先完成首版落地"))
 check("落地窗 → 仍會命中(B 靠人判)", ("自創縮語", "落地", "B") in hits_cls("客廳有一整面落地窗"))
 
+# allow：壞詞被合法長詞包住時放行，落在長詞外仍要報
+check("施工規範 → 不報", not any(n == "工地隱喻" for n, _ in hits("以施工規範附錄三為準")))
+check("施工規範同行另有裸施工 → 報", ("工地隱喻", "施工", "B") in hits_cls("施工規範寫的施工順序要改"))
+check("裸施工 → 仍報", ("工地隱喻", "施工", "B") in hits_cls("先確認施工順序再開工"))
+check("無 allow 的詞不受影響", ("自創縮語", "落地", "B") in hits_cls("首版落地了"))
+
 # 不該誤判的
 check("純英文行不查 per", ("latin-abbrev", "per") not in hits("results are shown per file"))
 check("fenced code 不查", hits("```\n這段代碼\n```") == set())
