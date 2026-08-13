@@ -15,6 +15,9 @@
     {"bad": "去抖",   "good": "連續同級只發一次", "class": "A", "cat": "calque", "note": "debounce 直譯;描述它做的事"},
     {"bad": "錨點",   "good": "關鍵時間點 / 基準", "class": "A", "cat": "calque", "note": "anchor 直譯"},
     {"bad": "終態",   "good": "結束狀態", "class": "A", "cat": "calque", "note": "中文散文用白話;程式常數 TERMINAL_STATUS 不改"},
+    {"bad": "硬時間", "good": "固定時段 / 不能改的時間", "class": "A", "cat": "calque", "note": "hard time 直譯;或逕列時間不加形容;2026-08-13 被糾正"},
+    {"bad": "硬截止", "good": "期限 / 不能延的期限", "class": "A", "cat": "calque", "note": "hard deadline 直譯;同源於「硬時間」"},
+    {"bad": "硬期限", "good": "期限 / 不能延的期限", "class": "A", "cat": "calque", "note": "hard deadline 直譯;同源於「硬時間」"},
     {"bad": "落地",   "good": "實作 / 上線 / 寫入", "class": "B", "cat": "calque", "note": "功能落地=implement/ship 的 calque,依語境換;班機落地 / 落地窗 / 落地生根 等本義例外故 B;2026-07-27 被糾正"},
 
     {"bad": "動工",   "good": "開始做",   "class": "A", "cat": "工地隱喻"},
