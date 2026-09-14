@@ -129,12 +129,25 @@ check("施工規範 → 不報", not any(n == "工地隱喻" for n, _ in hits("�
 check("施工規範同行另有裸施工 → 報", ("工地隱喻", "施工", "B") in hits_cls("施工規範寫的施工順序要改"))
 check("裸施工 → 仍報", ("工地隱喻", "施工", "B") in hits_cls("先確認施工順序再開工"))
 
+# 落點：自創壓縮詞該抓(B)，正常詞靠人判
+check("改動落點 → 報 B", ("自創縮語", "落點", "B") in hits_cls("這三項的改動落點在介面文件"))
+check("追蹤落點 → 報 B", ("自創縮語", "落點", "B") in hits_cls("追蹤落點是承諾條目頁"))
+check("落點分析 → 仍會命中(B 靠人判)", ("自創縮語", "落點", "B") in hits_cls("大學落點分析"))
+
 # 自判：自創縮語該抓(A)，「各自判斷」這類正常詞放過
 check("自判 → 報 A", ("自創縮語", "自判", "A") in hits_cls("VTM-1304 由 Host 自判"))
 check("各自判斷 → 不報", not any(m == "自判" for _, m in hits("兩支服務各自判斷是否重送")))
 check("各自判定 → 不報", not any(m == "自判" for _, m in hits("兩支服務各自判定是否重送")))
 check("各自判 後面沒接判定/判斷 → 仍報", ("自創縮語", "自判", "A") in hits_cls("兩支服務各自判這件事"))
 check("無 allow 的詞不受影響", ("自創縮語", "落地", "B") in hits_cls("首版落地了"))
+
+# 扇出：fan out 直譯該抓(A)，量詞的「一扇出入口」放過
+check("扇出 → 報 A", ("calque", "扇出", "A") in hits_cls("這一步會扇出成車門與月台門兩道"))
+check("扇出入口 → 不報", not any(m == "扇出" for _, m in hits("月台有一扇出入口")))
+check("扇出口 → 不報", not any(m == "扇出" for _, m in hits("走最近那扇出口")))
+
+# 持久化：persist 直譯該抓(A)
+check("持久化 → 報 A", ("calque", "持久化", "A") in hits_cls("task 狀態持久化於 tasks 表"))
 
 # 不該誤判的
 check("純英文行不查 per", ("latin-abbrev", "per") not in hits("results are shown per file"))
