@@ -149,6 +149,27 @@ check("扇出口 → 不報", not any(m == "扇出" for _, m in hits("走最近�
 # 持久化：persist 直譯該抓(A)
 check("持久化 → 報 A", ("calque", "持久化", "A") in hits_cls("task 狀態持久化於 tasks 表"))
 
+
+# 本票收 X：把「負責 / 涵蓋」壓成單字「收」該抓(A)，收到 / 收斂等正常詞放過
+check("本票 → 報 A", ("calque", "本票", "A") in hits_cls("本票只做中心端"))
+check("票主 → 報 A", ("自創縮語", "票主", "A") in hits_cls("這條由票主處理"))
+check("本票收 X → 報 A", ("ticket-scope-verb", "本票收", "A") in hits_cls("本票收中心端。"))
+check("這張票收 X → 報 A", ("ticket-scope-verb", "這張票收", "A") in hits_cls("這張票收車端實作"))
+check("本票收到 → 不報", not any(n == "ticket-scope-verb" for n, _ in hits("本票收到的回饋已處理")))
+check("本票收斂 → 不報", not any(n == "ticket-scope-verb" for n, _ in hits("本票收斂到班表展開")))
+check("本票收尾 → 不報", not any(n == "ticket-scope-verb" for n, _ in hits("本票收尾時補測試")))
+
+# 撐起 / 撐不起：承重隱喻用在查詢維度上該抓(A)，成語放過
+check("撐不起 → 報 A", ("support-metaphor", "撐不起", "A") in hits_cls("topic 撐不起車輛維度查詢"))
+check("撐起 → 報 A", ("support-metaphor", "撐起", "A") in hits_cls("這個欄位撐起班次維度查詢"))
+check("撐得起 → 報 A", ("support-metaphor", "撐得起", "A") in hits_cls("主鍵撐得起跨表查詢"))
+check("撐起一片天 → 不報", not any(n == "support-metaphor" for n, _ in hits("他一個人撐起一片天")))
+check("撐起半邊天 → 不報", not any(n == "support-metaphor" for n, _ in hits("這組人撐起半邊天")))
+
+# 對手方：counterparty 是金融法律名詞，講介面兩端時該抓(A)
+check("對手方 → 報 A", ("自創縮語", "對手方", "A") in hits_cls("這兩條 topic 指同一個對手方"))
+check("競爭對手 → 不報", not any(b == "對手方" for _, b in hits("這不是競爭對手的產品")))
+
 # 不該誤判的
 check("純英文行不查 per", ("latin-abbrev", "per") not in hits("results are shown per file"))
 check("fenced code 不查", hits("```\n這段代碼\n```") == set())
