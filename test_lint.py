@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """自我檢查:餵已知好 / 壞樣本,斷言該抓的抓到、該放的放過。無框架,直接跑。"""
 from pathlib import Path
-from lint import load_rules, scan_lines
+from lint import COMMENT_SYNTAX, load_rules, mask_source, scan_lines
 
 terms, patterns = load_rules(Path(__file__).with_name("rules.json"))
 
@@ -14,6 +14,17 @@ def hits(text):
 def hits_cls(text):
     return {(name, matched, cls) for _, _, cls, name, matched, _ in
             scan_lines(text.splitlines(), terms, patterns)}
+
+
+def src_hits(text, suffix=".js"):
+    """程式檔案的掃描結果:先切註解再套規則。"""
+    lines, skips = mask_source(text.splitlines(), COMMENT_SYNTAX[suffix])
+    return {(name, matched) for _, _, _, name, matched, _ in
+            scan_lines(lines, terms, patterns, skips)}
+
+
+def masked(text, suffix=".js"):
+    return mask_source(text.splitlines(), COMMENT_SYNTAX[suffix])[0]
 
 
 def check(name, cond):
@@ -175,5 +186,56 @@ check("純英文行不查 per", ("latin-abbrev", "per") not in hits("results are
 check("fenced code 不查", hits("```\n這段代碼\n```") == set())
 check("inline code 不查", ("大陸用語", "代碼") not in hits("請看 `代碼` 這個字串"))
 check("程式碼 不誤判為 代碼", ("大陸用語", "代碼") not in hits("這段程式碼沒問題"))
+
+# 程式檔案:先切註解再套規則(issue #13)
+# 1. 程式碼本體與字串字面值不當行文掃
+check("JS 字串字面值的分號 → 不報", not any(
+    n == "halfwidth-semicolon" for n, _ in
+    src_hits('logger.warn("拒收 Host mission：service_mode 不在值域", { id: x });')))
+check("行註解前的程式碼分號 → 不報", not any(
+    n == "halfwidth-semicolon" for n, _ in src_hits('const a = 1; // 這行是中文說明')))
+check("字串裡的 // 不當註解起點", not any(
+    n == "大陸用語" for n, _ in src_hits('const u = "http://x/代碼";')))
+check("註解內的中文分號 → 照報", ("halfwidth-semicolon", ";") in
+      src_hits('// 這裡分號;要全形'))
+
+# 2. 註解內文照常抓(issue 裡的兩條真陽性)
+check("行註解 返回 → 報", ("大陸用語", "返回") in
+      src_hits('        // 殘留 RUNNING task 直接返回、不走 doNextTask'))
+check("JSDoc 續行 一拍 → 報", ("beat-metaphor", "一拍") in
+      src_hits('/**\n * - 解除慢一拍,最多一個 supervisor tick\n */'))
+
+# 3. 註解裡的 bullet 與 markdown 同樣處理
+check("註解標記遮掉,bullet 落在行首", masked("    // - 條目內文")[0].strip() == "- 條目內文")
+check("註解內 bullet 的並列子句 → 報", any(n == "run-on-list" for n, _ in src_hits(
+    '// - RELEASE_BRAKE 重用消掉相依、空值防呆送出不等回應、走 fallback 記 warn、拆三個獨立 Map。')))
+check("註解內 bullet 的短名詞列舉 → 不報", not any(n == "run-on-list" for n, _ in
+      src_hits('// - 消掉相依、空值防呆送出、走 fallback、拆 Map')))
+check("定位錨從註解內文起算", ("beat-metaphor", "一拍") in src_hits('        // 慢一拍'))
+
+# 4. paren-supplement 只在 JSDoc 描述首行報
+check("JSDoc 描述首行括號 → 報", any(n == "paren-supplement" for n, _ in
+      src_hits('    /** 即時命令（不進 task 序列）。')))
+check("JSDoc 續行括號 → 不報", not any(n == "paren-supplement" for n, _ in
+      src_hits('    /**\n     * 即時命令。\n     * 細節見上方（這是內文補充）\n     */')))
+check("行註解括號 → 不報", not any(n == "paren-supplement" for n, _ in
+      src_hits('// 轉送給 ADS（見 handleMissionRequest）')))
+check("首行是 tag 就沒有描述首行", not any(n == "paren-supplement" for n, _ in
+      src_hits('    /**\n     * @param {string} id 站點（這是內文補充）\n     */')))
+
+# 5. JSDoc tag 的型別與參數名不是行文
+check("@param 型別與參數名遮掉",
+      masked("/**\n * @param {string} stationId 站點\n */")[1].strip() == "站點")
+check("@returns 的中文說明留下",
+      masked("/**\n * @returns {Object} 回傳的班次\n */")[1].strip() == "回傳的班次")
+
+# 6. Python:# 與 docstring
+check("Python 註解 → 報", ("大陸用語", "代碼") in src_hits('# 這段代碼有問題', ".py"))
+check("Python 字串字面值 → 不報", not any(
+    n == "halfwidth-semicolon" for n, _ in src_hits('msg = "任務結束;要回報"', ".py")))
+check("Python docstring → 報", ("大陸用語", "代碼") in
+      src_hits('def f():\n    """這段代碼有問題"""\n    return 1', ".py"))
+check("Python 多行 docstring 跨行 → 報", ("calque", "橫切") in
+      src_hits('"""說明\n\n這是橫切旗標\n"""\nx = 1', ".py"))
 
 print("\n全部通過")
