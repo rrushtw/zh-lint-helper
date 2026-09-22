@@ -7,7 +7,7 @@
 - 純語義規則(翻譯腔是否自然、括號是補充還是合法 gloss)機器不做,留給人 review。
 
 只查「含中文字的行」——一行擋掉純英文 / URL / 程式碼的誤判;fenced code block 與 inline
-`code` 一律遮掉不查。
+`code` 一律遮掉不查。程式檔案(`.js` / `.py` 等)先切出註解再套規則,見 COMMENT_SYNTAX。
 """
 import json
 import re
@@ -25,6 +25,30 @@ LINK_DEST = re.compile(r"\]\([^)\s]*\)")
 LEAD_MARKER = re.compile(r"^\s*(?:>\s*)*(?:(?:[-*+]|\d+[.)])\s+)?")
 # checkbox 例外(§0:checkbox 不拆):保留標記讓規則的行首排除繼續生效。
 CHECKBOX = re.compile(r"^\s*(?:>\s*)*(?:[-*+]|\d+[.)])\s+\[[ xX]\]")
+
+# 程式檔案的註解語法。key 是副檔名,不在表內的一律照 markdown 走(行為與先前相同)。
+# 刻意不收 `.yml` / `.conf`:YAML 的 plain scalar 沒有引號,收進來會把中文值當程式碼漏掉。
+# - line:行註解標記
+# - blocks:區塊註解的(起,迄)配對,依序比對
+# - quotes:字串引號,字串字面值整段不當行文掃
+# - cont:區塊註解有 `*` 續行標記(JSDoc),要連標記一起遮掉
+_C = {"line": "#", "blocks": [], "quotes": ['"', "'"], "cont": False}
+_JS = {"line": "//", "blocks": [("/*", "*/")], "quotes": ['"', "'", "`"], "cont": True}
+_PY = {"line": "#", "blocks": [('"""', '"""'), ("'''", "'''")],
+       "quotes": ['"', "'"], "cont": False}
+COMMENT_SYNTAX = {
+    ".js": _JS, ".mjs": _JS, ".cjs": _JS, ".jsx": _JS, ".ts": _JS, ".tsx": _JS,
+    ".py": _PY,
+    ".sh": _C, ".env": _C,
+}
+# JSDoc 續行的 ` * `:遮掉才讓註解內的 `- ` 落在行首,LIST 三規則照 markdown 處理。
+JSDOC_CONT = re.compile(r"^\s*\*+[ \t]?")
+# JSDoc tag 的型別與參數名段不是行文(`@param {string} stationId 站點` 只有「站點」是)。
+# 第三段只在不含中文時才遮,`@returns {Object} 回傳值` 的中文說明才不會被吃掉。
+JSDOC_TAG = re.compile(r"^[ \t]*@\w+[ \t]*(?:\{[^}]*\}[ \t]*)?(?:(?![^\s]*[一-鿿])\S+[ \t]*)?")
+# 只在 JSDoc 描述首行報的規則:程式註解內文的括號多半是合法 gloss 或 cross-ref,
+# 全報等於每行都要人逐筆判。markdown 不套這層,行為不變。
+HEADING_ONLY = frozenset({"paren-supplement"})
 
 
 def load_rules(path):
@@ -57,8 +81,71 @@ def find_outside(line, bad, allow):
     return -1
 
 
-def scan_lines(lines, terms, patterns):
-    """回傳 findings:(lineno, col, class, name, matched, suggestion)。lines 為可迭代的原始行。"""
+def mask_source(lines, syn):
+    """程式檔案 → (只留註解內文的行, 各行要略過的規則)。
+
+    - 程式碼本體與字串字面值換等長空白:行號與欄位不變,含中文的字串字面值不當行文掃
+      - 字串是給人看的訊息,但句長與標點的判準與註解內文不同,要掃得另開規則類別
+    - 註解標記與 JSDoc 續行的 `*` 一併遮掉:註解內的 `- ` 因此落在行首
+    - `paren-supplement` 只留在 JSDoc 描述首行,其餘行略過
+    - 已知天花板:跨行的 JS template literal 當不到字串,那行的中文會被當註解掃
+    """
+    out, skips = [], {}
+    block = None          # 區塊註解未結束時存它的結束標記,跨行保留
+    desc_pending = False  # 剛開 `/**`,還沒遇到第一行內文
+    for lineno, raw in enumerate(lines, 1):
+        keep = [False] * len(raw)
+        quote = None
+        i = 0
+        while i < len(raw):
+            if block:
+                if raw.startswith(block, i):
+                    i += len(block)
+                    block = None
+                else:
+                    keep[i] = True
+                    i += 1
+            elif quote:
+                if raw[i] == "\\":
+                    i += 2
+                elif raw.startswith(quote, i):
+                    i += len(quote)
+                    quote = None
+                else:
+                    i += 1
+            elif syn["line"] and raw.startswith(syn["line"], i):
+                for j in range(i + len(syn["line"]), len(raw)):
+                    keep[j] = True
+                i = len(raw)
+            elif pair := next((p for p in syn["blocks"] if raw.startswith(p[0], i)), None):
+                block = pair[1]
+                desc_pending = raw.startswith("/**", i)
+                i += len(pair[0])
+            elif q := next((x for x in syn["quotes"] if raw.startswith(x, i)), None):
+                quote = q
+                i += len(q)
+            else:
+                i += 1
+        line = "".join(c if keep[k] else " " for k, c in enumerate(raw))
+        if syn["cont"]:
+            line = JSDOC_CONT.sub(lambda m: " " * len(m.group()), line, count=1)
+        heading = False
+        if desc_pending and line.strip():
+            # 首行就是 tag 表示這段沒有描述,一樣消耗掉 pending
+            heading = not line.lstrip().startswith("@")
+            desc_pending = False
+        line = JSDOC_TAG.sub(lambda m: " " * len(m.group()), line, count=1)
+        if not heading:
+            skips[lineno] = HEADING_ONLY
+        out.append(line)
+    return out, skips
+
+
+def scan_lines(lines, terms, patterns, skips=None):
+    """回傳 findings:(lineno, col, class, name, matched, suggestion)。lines 為可迭代的原始行。
+
+    skips:lineno → 該行要略過的規則名稱集合,由 mask_source 產生;markdown 傳 None。
+    """
     findings = []
     in_fence = False
     for lineno, raw in enumerate(lines, 1):
@@ -67,6 +154,7 @@ def scan_lines(lines, terms, patterns):
             continue
         if in_fence or not CJK.search(raw):
             continue
+        skip = skips.get(lineno, ()) if skips else ()
         # 遮掉 inline code,用等長空白保留欄位位置
         line = INLINE_CODE.sub(lambda m: " " * len(m.group()), raw)
         line = LINK_DEST.sub(lambda m: " " * len(m.group()), line)
@@ -78,11 +166,19 @@ def scan_lines(lines, terms, patterns):
                 findings.append((lineno, idx + 1, meta["class"],
                                  meta.get("cat", "term"), bad, meta["good"]))
         for rx, meta in patterns:
+            if meta["name"] in skip:
+                continue
             m = rx.search(line)
             if m:
+                # 整句規則從行首起算,定位錨要跳過遮掉的縮排與標記才看得出命中哪一句。
+                # 跳掉幾個字就往後多取幾個字,定位錨的寬度不因縮排深淺而變。
+                start = m.start()
+                while start < len(line) and line[start] == " ":
+                    start += 1
+                end = m.end() + (start - m.start())
                 # 遮罩都用等長空白,故 offset 可直接套回原始行取可讀的定位錨
-                findings.append((lineno, m.start() + 1, meta["class"],
-                                 meta["name"], raw[m.start():m.end()], meta["good"]))
+                findings.append((lineno, start + 1, meta["class"],
+                                 meta["name"], raw[start:end], meta["good"]))
     return findings
 
 
@@ -105,7 +201,10 @@ def main(argv):
 
     for f in files:
         lines = f.read_text(encoding="utf-8").splitlines()
-        for lineno, col, cls, name, matched, good in scan_lines(lines, terms, patterns):
+        skips = None
+        if syn := COMMENT_SYNTAX.get(f.suffix.lower()):
+            lines, skips = mask_source(lines, syn)
+        for lineno, col, cls, name, matched, good in scan_lines(lines, terms, patterns, skips):
             total += 1
             tag = "error" if cls == "A" else "warn "
             had_error |= cls == "A"

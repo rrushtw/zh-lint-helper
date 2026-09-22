@@ -49,6 +49,22 @@ docker run --rm -v /home/liu/git/zh-lint:/w -v <草稿目錄>:/data -w /w \
 
 只查含中文字的行，fenced code block 與 inline `` `code` `` 會被遮掉，不會誤判程式碼。純語義層（括號是補充還是合法 gloss、句子自不自然）機器不做，仍要人 review。
 
+## 程式檔案
+
+`.js` / `.ts` / `.py` / `.sh` / `.env` 會先切出註解再套規則：
+
+- 只掃註解，程式碼本體與字串字面值（含中文訊息）一律不掃
+- 註解內以 `-` 開頭的條目當行首 bullet，LIST 三規則照 markdown 處理
+- `paren-supplement` 只在 JSDoc 描述首行報——內文括號多半是合法 gloss
+- `@param` / `@returns` 的型別與參數名段不計句長
+
+表列之外的副檔名照 markdown 走。改 Node.js / Python 前順手掃一遍註解：
+
+```sh
+docker run --rm -v /home/liu/git/zh-lint:/w -v <repo>:/data -w /w \
+  python:3.12-slim python lint.py /data/src/controllers/xxx.js
+```
+
 ## 擴充
 
 被糾正到新怪詞 → 只在 `rules.json` 的 `terms` 或 `patterns` append 一筆，**不動 `lint.py`**：
