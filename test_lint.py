@@ -181,6 +181,17 @@ check("撐起半邊天 → 不報", not any(n == "support-metaphor" for n, _ in 
 check("對手方 → 報 A", ("自創縮語", "對手方", "A") in hits_cls("這兩條 topic 指同一個對手方"))
 check("競爭對手 → 不報", not any(b == "對手方" for _, b in hits("這不是競爭對手的產品")))
 
+# 死項 / 死碼：dead code 的仿造詞,講它的實情該抓(A)
+check("死項 → 報 A", ("calque", "死項", "A") in hits_cls("這條現在是死項"))
+check("死碼 → 報 A", ("calque", "死碼", "A") in hits_cls("那個 reason code 變成死碼"))
+check("生死關頭 不誤判", not any(b in ("死項", "死碼") for _, b in hits("這是生死關頭的決定")))
+check("密碼 不誤判為 死碼", not any(b == "死碼" for _, b in hits("超越控制要輸入密碼")))
+
+# 收斂：converge 直譯該抓(B)，數學與本義靠人判
+check("待收斂 → 報 B", ("calque", "收斂", "B") in hits_cls("這項正式營運前應收斂"))
+check("收斂為一套 → 報 B", ("calque", "收斂", "B") in hits_cls("班表下發端點收斂為一套"))
+check("數列收斂 → 仍會命中(B 靠人判)", ("calque", "收斂", "B") in hits_cls("這個數列收斂到零"))
+
 # 不該誤判的
 check("純英文行不查 per", ("latin-abbrev", "per") not in hits("results are shown per file"))
 check("fenced code 不查", hits("```\n這段代碼\n```") == set())

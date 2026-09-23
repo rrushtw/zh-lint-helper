@@ -23,6 +23,9 @@
     {"bad": "持久化", "good": "寫入資料庫 / 存進資料庫 / 留存", "class": "A", "cat": "calque", "note": "persist 直譯;講它做的事,如「存進 tasks.action_code」;2026-09-14 被糾正"},
     {"bad": "本票",   "good": "這張 issue", "class": "A", "cat": "calque", "note": "ticket 直譯成「票」;「本票」在中文是票據法的法律名詞(promissory note);2026-09-15 被糾正"},
     {"bad": "票主",   "good": "開票的人 / 直接寫名字", "class": "A", "cat": "自創縮語", "note": "同「本票」的 ticket 直譯;2026-09-15 被糾正"},
+    {"bad": "死項",   "good": "用不到了 / 已失效 / 沒有對應的實作", "class": "A", "cat": "calque", "note": "dead code 的仿造詞;講它的實情,如「這條已經沒有對應的動作碼」;2026-09-18 被糾正"},
+    {"bad": "死碼",   "good": "用不到了 / 已失效 / 不會再出現", "class": "A", "cat": "calque", "note": "同「死項」,dead code 直譯;2026-09-18 被糾正"},
+    {"bad": "收斂",   "good": "整理 / 縮小為 / 只剩 / 修正", "class": "B", "cat": "calque", "note": "converge 直譯;講它做的事,如「回報範圍限定在台智駕的訂單」;數學的數列收斂 / 收斂脾氣等本義例外故 B;2026-09-21 被糾正"},
 
     {"bad": "動工",   "good": "開始做",   "class": "A", "cat": "工地隱喻"},
     {"bad": "完工",   "good": "完成",     "class": "A", "cat": "工地隱喻"},
