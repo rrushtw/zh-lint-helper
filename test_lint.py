@@ -69,7 +69,7 @@ check("兩個子句 → 不報（未達 3 段）", not any(n == "run-on-list" fo
 check("純英文識別字列舉 → 不報", not any(n == "run-on-list" for n, _ in
       hits("- 本頁的 topic、payload、cadence、retain 旗標與判定門檻由 ICL 先行定義")))
 check("連結 URL 的中文 anchor 不計句長 → 不報", not any(n == "long-sentence" for n, _ in
-      hits("- Agent 展開 task 後透傳至 ADS（[agent-ads-mqtt §2.1](/T3/interfaces/agent-ads-mqtt#h-21-導航任務-navigate)），ADS 依此識別碼自查內建站點資料庫取得精準停靠姿態")))
+      hits("- Agent 展開 task 後轉發至 ADS（[agent-ads-mqtt §2.1](/T3/interfaces/agent-ads-mqtt#h-21-導航任務-navigate)），ADS 依此識別碼自查內建站點資料庫取得精準停靠姿態")))
 
 # run-on-sentence:一句 3+ 個實質子句(，／；分隔)該報,短子句 / 引言句 / bullet 放過
 check("三子句擠一句 → 報", any(n == "run-on-sentence" for n, _ in
@@ -130,10 +130,11 @@ check("英文分號後接空格 → 不報", not any(n == "halfwidth-semicolon" 
 check("英文分號無空格 → 報", ("halfwidth-semicolon", ";", "A") in hits_cls("這段 a;b 是程式碼"))
 check("數字之間半形分號 → 報", ("halfwidth-semicolon", ";", "A") in hits_cls("總共 1;2 兩筆"))
 
-# 落地：工程直譯動詞該抓(B)，正常詞放過
-check("落地 動詞 → 報 B", ("自創縮語", "落地", "B") in hits_cls("導航參數一路落地到資料庫"))
-check("首版落地 → 報 B", ("自創縮語", "落地", "B") in hits_cls("本期先完成首版落地"))
-check("落地窗 → 仍會命中(B 靠人判)", ("自創縮語", "落地", "B") in hits_cls("客廳有一整面落地窗"))
+# 落地：工程直譯動詞該抓(A)，本義複合詞放過
+check("落地 動詞 → 報 A", ("calque", "落地", "A") in hits_cls("導航參數一路落地到資料庫"))
+check("首版落地 → 報 A", ("calque", "落地", "A") in hits_cls("本期先完成首版落地"))
+check("落地窗 → 不報", not any(m == "落地" for _, m in hits("客廳有一整面落地窗")))
+check("班機落地 → 不報", not any(m == "落地" for _, m in hits("班機落地後才回報")))
 
 # allow：壞詞被合法長詞包住時放行，落在長詞外仍要報
 check("施工規範 → 不報", not any(n == "工地隱喻" for n, _ in hits("以施工規範附錄三為準")))
@@ -150,7 +151,7 @@ check("自判 → 報 A", ("自創縮語", "自判", "A") in hits_cls("VTM-1304 
 check("各自判斷 → 不報", not any(m == "自判" for _, m in hits("兩支服務各自判斷是否重送")))
 check("各自判定 → 不報", not any(m == "自判" for _, m in hits("兩支服務各自判定是否重送")))
 check("各自判 後面沒接判定/判斷 → 仍報", ("自創縮語", "自判", "A") in hits_cls("兩支服務各自判這件事"))
-check("無 allow 的詞不受影響", ("自創縮語", "落地", "B") in hits_cls("首版落地了"))
+check("無 allow 的詞不受影響", ("calque", "持久化", "A") in hits_cls("這批資料要持久化"))
 
 # 扇出：fan out 直譯該抓(A)，量詞的「一扇出入口」放過
 check("扇出 → 報 A", ("calque", "扇出", "A") in hits_cls("這一步會扇出成車門與月台門兩道"))
@@ -163,6 +164,13 @@ check("持久化 → 報 A", ("calque", "持久化", "A") in hits_cls("task 狀�
 
 # 本票收 X：把「負責 / 涵蓋」壓成單字「收」該抓(A)，收到 / 收斂等正常詞放過
 check("本票 → 報 A", ("calque", "本票", "A") in hits_cls("本票只做中心端"))
+check("透傳 → 報 A", ("calque", "透傳", "A") in hits_cls("由 Agent 解讀、不透傳 ADS"))
+check("票面 → 報 A", ("calque", "票面", "A") in hits_cls("符合票面的部分"))
+check("硬節點 → 報 A", ("calque", "硬節點", "A") in hits_cls("接下來的硬節點是 10-02"))
+check("硬牆 → 報 A", ("calque", "硬牆", "A") in hits_cls("那是時間硬牆"))
+check("硬性截止日期 → 不報", not any(m in ("硬截止", "硬期限") for _, m in hits("這是硬性截止日期")))
+check("切成 → 報 B", ("自創縮語", "切成", "B") in hits_cls("狀態切成兩段"))
+check("跟著切 → 報 B", ("自創縮語", "跟著切", "B") in hits_cls("語義要不要跟著切"))
 check("票主 → 報 A", ("自創縮語", "票主", "A") in hits_cls("這條由票主處理"))
 check("本票收 X → 報 A", ("ticket-scope-verb", "本票收", "A") in hits_cls("本票收中心端。"))
 check("這張票收 X → 報 A", ("ticket-scope-verb", "這張票收", "A") in hits_cls("這張票收車端實作"))
@@ -248,5 +256,11 @@ check("Python docstring → 報", ("大陸用語", "代碼") in
       src_hits('def f():\n    """這段代碼有問題"""\n    return 1', ".py"))
 check("Python 多行 docstring 跨行 → 報", ("calque", "橫切") in
       src_hits('"""說明\n\n這是橫切旗標\n"""\nx = 1', ".py"))
+
+# bare-adjective-predicate:單字形容詞當謂語太短促,要補程度副詞
+check("回覆會慢 → 報 B", ("bare-adjective-predicate", "會慢", "B") in hits_cls("那段期間回覆會慢"))
+check("回覆會比較慢 → 不報", not any(n == "bare-adjective-predicate" for n, _ in hits("那段期間回覆會比較慢")))
+check("會慢慢改善 → 不報", not any(n == "bare-adjective-predicate" for n, _ in hits("系統會慢慢改善")))
+check("不會慢下來 → 不報", not any(n == "bare-adjective-predicate" for n, _ in hits("車速不會慢下來")))
 
 print("\n全部通過")
