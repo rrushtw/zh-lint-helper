@@ -34,6 +34,7 @@ def check(name, cond):
 
 # 該抓到的
 check("大陸用語 代碼", ("大陸用語", "代碼") in hits("這段代碼有問題"))
+check("大陸用語 報文", ("大陸用語", "報文") in hits("由報文層級向上標記執行中"))
 check("calque 橫切", ("calque", "橫切") in hits("這是橫切旗標"))
 check("math symbol", ("math-symbol", "∪") in hits("取 A ∪ B 的結果"))
 
@@ -145,6 +146,12 @@ check("裸施工 → 仍報", ("工地隱喻", "施工", "B") in hits_cls("先�
 check("改動落點 → 報 B", ("自創縮語", "落點", "B") in hits_cls("這三項的改動落點在介面文件"))
 check("追蹤落點 → 報 B", ("自創縮語", "落點", "B") in hits_cls("追蹤落點是承諾條目頁"))
 check("落點分析 → 仍會命中(B 靠人判)", ("自創縮語", "落點", "B") in hits_cls("大學落點分析"))
+
+# 落庫：同「落DB」的自創壓縮詞(A)
+check("落庫 → 報 A", ("自創縮語", "落庫", "A") in hits_cls("不在此集合內即無從分流，落庫前擋掉"))
+# 訊框：frame 過度壓縮(A),「視訊框」放行
+check("訊框 → 報 A", ("自創縮語", "訊框", "A") in hits_cls("尚未收任何 BMS 訊框回 null"))
+check("視訊框 不報", not any(h[1] == "訊框" for h in hits_cls("切換視訊框大小")))
 
 # 自判：自創縮語該抓(A)，「各自判斷」這類正常詞放過
 check("自判 → 報 A", ("自創縮語", "自判", "A") in hits_cls("VTM-1304 由 Host 自判"))
