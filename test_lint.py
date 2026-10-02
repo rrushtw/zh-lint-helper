@@ -152,6 +152,10 @@ check("落庫 → 報 A", ("自創縮語", "落庫", "A") in hits_cls("不在此
 # 訊框：frame 過度壓縮(A),「視訊框」放行
 check("訊框 → 報 A", ("自創縮語", "訊框", "A") in hits_cls("尚未收任何 BMS 訊框回 null"))
 check("視訊框 不報", not any(h[1] == "訊框" for h in hits_cls("切換視訊框大小")))
+# 去信：公文書面語(A),「失去信心 / 過去信件」放行
+check("去信 → 報 A", ("文言", "去信", "A") in hits_cls("10-02 已去信索取點位對照表"))
+check("失去信心 不報", not any(h[1] == "去信" for h in hits_cls("使用者失去信心")))
+check("過去信件 不報", not any(h[1] == "去信" for h in hits_cls("翻過去信件紀錄")))
 
 # 自判：自創縮語該抓(A)，「各自判斷」這類正常詞放過
 check("自判 → 報 A", ("自創縮語", "自判", "A") in hits_cls("VTM-1304 由 Host 自判"))
