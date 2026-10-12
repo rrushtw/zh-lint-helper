@@ -156,6 +156,9 @@ check("視訊框 不報", not any(h[1] == "訊框" for h in hits_cls("切換視�
 check("去信 → 報 A", ("文言", "去信", "A") in hits_cls("10-02 已去信索取點位對照表"))
 check("失去信心 不報", not any(h[1] == "去信" for h in hits_cls("使用者失去信心")))
 check("過去信件 不報", not any(h[1] == "去信" for h in hits_cls("翻過去信件紀錄")))
+# 硬限制：hard constraint 直譯(B),「硬性限制」放行
+check("硬限制 → 報 B", ("calque", "硬限制", "B") in hits_cls("實作上的硬限制"))
+check("硬性限制 不報", not any(h[1] == "硬限制" for h in hits_cls("實作上的硬性限制")))
 
 # 自判：自創縮語該抓(A)，「各自判斷」這類正常詞放過
 check("自判 → 報 A", ("自創縮語", "自判", "A") in hits_cls("VTM-1304 由 Host 自判"))
