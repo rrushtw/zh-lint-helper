@@ -160,6 +160,10 @@ check("過去信件 不報", not any(h[1] == "去信" for h in hits_cls("翻過�
 check("硬限制 → 報 B", ("calque", "硬限制", "B") in hits_cls("實作上的硬限制"))
 check("硬性限制 不報", not any(h[1] == "硬限制" for h in hits_cls("實作上的硬性限制")))
 
+# 判準：過度壓縮(A),「裁判準備」這類正常詞放行
+check("判準 → 報 A", ("自創縮語", "判準", "A") in hits_cls("計畫 4 的判準沒有改"))
+check("裁判準備 不報", not any(h[1] == "判準" for h in hits_cls("裁判準備好了")))
+
 # 同語意：過度壓縮(B),「相同語意」「不同語意」放行
 check("同語意 → 報 B", ("自創縮語", "同語意", "B") in hits_cls("與 DISPATCH_RETRY 同語意"))
 check("相同語意 不報", not any(h[1] == "同語意" for h in hits_cls("與 DISPATCH_RETRY 相同語意")))
