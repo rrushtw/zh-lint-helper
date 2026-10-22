@@ -81,11 +81,13 @@ def find_outside(line, bad, allow):
     return -1
 
 
-def mask_source(lines, syn):
+def mask_source(lines, syn, strings=False):
     """程式檔案 → (只留註解內文的行, 各行要略過的規則)。
 
     - 程式碼本體與字串字面值換等長空白:行號與欄位不變,含中文的字串字面值不當行文掃
-      - 字串是給人看的訊息,但句長與標點的判準與註解內文不同,要掃得另開規則類別
+      - 字串是給人看的訊息,但句長與標點的判準與註解內文不同
+    - `strings=True` 改成只留字串字面值內文、遮掉註解,給 main 只套用詞規則
+      - log 訊息與錯誤訊息一樣是給人看的中文,用詞錯誤同樣要抓
     - 註解標記與 JSDoc 續行的 `*` 一併遮掉:註解內的 `- ` 因此落在行首
     - `paren-supplement` 只留在 JSDoc 描述首行,其餘行略過
     - 已知天花板:跨行的 JS template literal 當不到字串,那行的中文會被當註解掃
@@ -103,7 +105,7 @@ def mask_source(lines, syn):
                     i += len(block)
                     block = None
                 else:
-                    keep[i] = True
+                    keep[i] = not strings
                     i += 1
             elif quote:
                 if raw[i] == "\\":
@@ -112,10 +114,11 @@ def mask_source(lines, syn):
                     i += len(quote)
                     quote = None
                 else:
+                    keep[i] = strings
                     i += 1
             elif syn["line"] and raw.startswith(syn["line"], i):
                 for j in range(i + len(syn["line"]), len(raw)):
-                    keep[j] = True
+                    keep[j] = not strings
                 i = len(raw)
             elif pair := next((p for p in syn["blocks"] if raw.startswith(p[0], i)), None):
                 block = pair[1]
@@ -127,6 +130,9 @@ def mask_source(lines, syn):
             else:
                 i += 1
         line = "".join(c if keep[k] else " " for k, c in enumerate(raw))
+        if strings:
+            out.append(line)
+            continue
         if syn["cont"]:
             line = JSDOC_CONT.sub(lambda m: " " * len(m.group()), line, count=1)
         heading = False
@@ -203,8 +209,13 @@ def main(argv):
         lines = f.read_text(encoding="utf-8").splitlines()
         skips = None
         if syn := COMMENT_SYNTAX.get(f.suffix.lower()):
+            string_lines = mask_source(lines, syn, strings=True)[0]
             lines, skips = mask_source(lines, syn)
-        for lineno, col, cls, name, matched, good in scan_lines(lines, terms, patterns, skips):
+        findings = scan_lines(lines, terms, patterns, skips)
+        if syn:
+            # 字串字面值只套用詞規則;句長與標點規則不適用 log 這類短訊息
+            findings += scan_lines(string_lines, terms, [])
+        for lineno, col, cls, name, matched, good in sorted(findings):
             total += 1
             tag = "error" if cls == "A" else "warn "
             had_error |= cls == "A"

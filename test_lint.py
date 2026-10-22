@@ -23,6 +23,12 @@ def src_hits(text, suffix=".js"):
             scan_lines(lines, terms, patterns, skips)}
 
 
+def str_hits(text, suffix=".js"):
+    """程式檔案字串字面值的掃描結果:只套用詞規則。"""
+    lines = mask_source(text.splitlines(), COMMENT_SYNTAX[suffix], strings=True)[0]
+    return {(name, matched) for _, _, _, name, matched, _ in scan_lines(lines, terms, [])}
+
+
 def masked(text, suffix=".js"):
     return mask_source(text.splitlines(), COMMENT_SYNTAX[suffix])[0]
 
@@ -279,6 +285,14 @@ check("Python docstring → 報", ("大陸用語", "代碼") in
       src_hits('def f():\n    """這段代碼有問題"""\n    return 1', ".py"))
 check("Python 多行 docstring 跨行 → 報", ("calque", "橫切") in
       src_hits('"""說明\n\n這是橫切旗標\n"""\nx = 1', ".py"))
+
+# 7. 字串字面值只套用詞規則(log / 錯誤訊息也是給人看的中文)
+check("JS 字串字面值的用詞 → 報", ("自創縮語", "落狀態") in str_hits('logger.warn("視為無效、不落狀態", { topic });'))
+check("JS 字串字面值的句長與標點 → 不報", str_hits('logger.warn("拒收 Host mission：service_mode 不在值域;改送 NACK", { id: x });') == set())
+check("字串模式不掃註解", str_hits('const a = 1; // 這段代碼') == set())
+check("不落 → 報 B", ("自創縮語", "不落", "B") in hits_cls("格式無效即不落事件列"))
+check("落 DB 有空格 → 報", ("自創縮語", "落 DB") in hits("實際落 DB 的狀態"))
+check("不落俗套 → 不報", not any(m == "不落" for _, m in hits("寫法不落俗套")))
 
 # bare-adjective-predicate:單字形容詞當謂語太短促,要補程度副詞
 check("回覆會慢 → 報 B", ("bare-adjective-predicate", "會慢", "B") in hits_cls("那段期間回覆會慢"))
