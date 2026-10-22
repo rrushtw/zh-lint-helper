@@ -53,7 +53,8 @@ docker run --rm -v /home/liu/git/zh-lint:/w -v <草稿目錄>:/data -w /w \
 
 `.js` / `.ts` / `.py` / `.sh` / `.env` 會先切出註解再套規則：
 
-- 只掃註解，程式碼本體與字串字面值（含中文訊息）一律不掃
+- 程式碼本體不掃；註解套全部規則
+- 字串字面值只套用詞規則，不套句長與標點規則
 - 註解內以 `-` 開頭的條目當行首 bullet，LIST 三規則照 markdown 處理
 - `paren-supplement` 只在 JSDoc 描述首行報——內文括號多半是合法 gloss
 - `@param` / `@returns` 的型別與參數名段不計句長
